@@ -6,7 +6,7 @@
 *
 ********************************************************************************
 * \copyright
-* Copyright 2018-2019 Cypress Semiconductor Corporation
+* Copyright 2018-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,9 @@
 #if !defined(CY_UTILS_H)
 #define CY_UTILS_H
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -41,7 +44,7 @@ extern "C" {
 
 /** Halt the processor in the debug state
  */
-static inline void CY_HALT()
+static inline void CY_HALT(void)
 {
     __asm("    bkpt    1");
 }
@@ -53,14 +56,14 @@ static inline void CY_HALT()
 /** Utility macro when neither NDEBUG or CY_NO_ASSERT is not declared to check a condition and, if false, trigger a breakpoint */
 #if defined(NDEBUG) || defined(CY_NO_ASSERT)
     #define CY_ASSERT(x)    do {                \
-                            } while(0)
+                            } while(false)
 #else
     #define CY_ASSERT(x)    do {                \
                                 if(!(x))        \
                                 {               \
                                     CY_HALT();  \
                                 }               \
-                            } while(0)
+                            } while(false)
 #endif  /* defined(NDEBUG) */
 
 
@@ -122,7 +125,7 @@ static inline void CY_HALT()
         #define CY_RAMFUNC_BEGIN    __attribute__ ((section(".cy_ramfunc")))
         #define CY_RAMFUNC_END
     #endif
-    
+
     #define CY_UNUSED           __attribute__ ((unused))
     #define CY_NOINLINE         __attribute__ ((noinline))
     #define CY_ALIGN(align)     __ALIGNED(align)
@@ -215,7 +218,7 @@ static inline void CY_HALT()
 *******************************************************************************/
 #define CY_GET_REG24(addr)          (((uint32_t) (*((const volatile uint8_t *)(addr)))) | \
                                     (((uint32_t) (*((const volatile uint8_t *)(addr) + 1))) << 8U) | \
-                                    (((uint32_t) (*((const volatile uint8_t *)(addr) + 2))) << 16U))                                    
+                                    (((uint32_t) (*((const volatile uint8_t *)(addr) + 2))) << 16U))
 
 
 /*******************************************************************************
@@ -284,8 +287,8 @@ static inline void CY_HALT()
 * Macro Name: CY_REG32_CLR_SET
 ****************************************************************************//**
 *
-*  Uses _CLR_SET_FLD32U macro for providing get-clear-modify-write 
-*  operations with a name field and value and writes a resulting value 
+*  Uses _CLR_SET_FLD32U macro for providing get-clear-modify-write
+*  operations with a name field and value and writes a resulting value
 *  to the 32-bit register.
 *
 *******************************************************************************/
@@ -303,14 +306,14 @@ static inline void CY_HALT()
 *******************************************************************************/
 #define _CLR_SET_FLD16U(reg, field, value) ((uint16_t)(((reg) & ((uint16_t)(~(field ## _Msk)))) |   \
                                                        ((uint16_t)_VAL2FLD(field, value))))
-                                                       
-                                                       
+
+
 /*******************************************************************************
 * Macro Name: CY_REG16_CLR_SET
 ****************************************************************************//**
 *
-*  Uses _CLR_SET_FLD16U macro for providing get-clear-modify-write 
-*  operations with a name field and value and writes a resulting value 
+*  Uses _CLR_SET_FLD16U macro for providing get-clear-modify-write
+*  operations with a name field and value and writes a resulting value
 *  to the 16-bit register.
 *
 *******************************************************************************/
@@ -328,14 +331,14 @@ static inline void CY_HALT()
 *******************************************************************************/
 #define _CLR_SET_FLD8U(reg, field, value) ((uint8_t)(((reg) & ((uint8_t)(~(field ## _Msk)))) |  \
                                                      ((uint8_t)_VAL2FLD(field, value))))
-                                                     
-                                                     
+
+
 /*******************************************************************************
 * Macro Name: CY_REG8_CLR_SET
 ****************************************************************************//**
 *
-*  Uses _CLR_SET_FLD8U macro for providing get-clear-modify-write 
-*  operations with a name field and value and writes a resulting value 
+*  Uses _CLR_SET_FLD8U macro for providing get-clear-modify-write
+*  operations with a name field and value and writes a resulting value
 *  to the 8-bit register.
 *
 *******************************************************************************/
@@ -385,6 +388,41 @@ static inline void CY_HALT()
 *******************************************************************************/
 #define CY_SYSLIB_DIV_ROUNDUP(a, b) ((((a) - 1U) / (b)) + 1U)
 
+/*******************************************************************************
+*  Provides the macros for MISRA violation documentation in Coverity tool.
+*******************************************************************************/
+
+/** \cond INTERNAL */
+
+#ifdef CY_COVERITY_2012_CHECK /* Check MISRA-C:2012 with Coverity tool */
+#define CY_COVERITY_PRAGMA_STR(a) #a
+
+#define CY_MISRA_DEVIATE_LINE(MISRA,MESSAGE) \
+_Pragma(CY_COVERITY_PRAGMA_STR(coverity compliance deviate MISRA MESSAGE))
+
+#define CY_MISRA_FP_LINE(MISRA,MESSAGE) \
+_Pragma(CY_COVERITY_PRAGMA_STR(coverity compliance fp MISRA MESSAGE))
+
+#define CY_MISRA_DEVIATE_BLOCK_START(MISRA,COUNT,MESSAGE) \
+_Pragma(CY_COVERITY_PRAGMA_STR(coverity compliance block (deviate:COUNT MISRA MESSAGE)))
+
+#define CY_MISRA_FP_BLOCK_START(MISRA,COUNT,MESSAGE) \
+_Pragma(CY_COVERITY_PRAGMA_STR(coverity compliance block (fp:COUNT MISRA MESSAGE)))
+
+#define CY_MISRA_BLOCK_END(MISRA) \
+_Pragma(CY_COVERITY_PRAGMA_STR(coverity compliance end_block MISRA))
+
+#else /* General usage */
+
+#define CY_MISRA_DEVIATE_LINE(MISRA,MESSAGE) do{}while(false)
+#define CY_MISRA_FP_LINE(MISRA,MESSAGE) do{}while(false)
+#define CY_MISRA_DEVIATE_BLOCK_START(MISRA,COUNT,MESSAGE)
+#define CY_MISRA_FP_BLOCK_START(MISRA,COUNT,MESSAGE)
+#define CY_MISRA_BLOCK_END(MISRA)
+
+#endif /* CY_COVERITY_2012_CHECK */
+
+/** \endcond */
 
 #ifdef __cplusplus
 }

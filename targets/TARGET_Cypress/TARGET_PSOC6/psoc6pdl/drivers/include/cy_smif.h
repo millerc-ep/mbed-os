@@ -1,12 +1,12 @@
 /***************************************************************************//**
 * \file cy_smif.h
-* \version 1.40.1
+* \version 2.0
 *
 * Provides an API declaration of the Cypress SMIF driver.
 *
 ********************************************************************************
 * \copyright
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -187,32 +187,42 @@
 * Configuration Tool User Guide located in \<PDL_DIR\>/tools/\<OS_DIR\>/SMIFConfigurationTool/
 * folder
 *
-* \section group_smif_MISRA MISRA-C Compliance]
-* <table class="doxtable">
-*   <tr>
-*     <th>MISRA rule</th>
-*     <th>Rule Class (Required/Advisory)</th>
-*     <th>Rule Description</th>
-*     <th>Description of Deviation(s)</th>
-*   </tr>
-*   <tr>
-*     <td>11.4</td>
-*     <td>A</td>
-*     <td>The cast is be performed between a pointer to the object type and a different pointer to the object type.</td>
-*     <td>The cast from the pointer to void to the pointer to an unsigned integer does not have any unintended effect, as
-*         it is a consequence of the definition of a structure based on hardware registers.</td>
-*   </tr>
-*   <tr>
-*     <td>11.5</td>
-*     <td>R</td>
-*     <td>Not performed, the cast that removes any const or volatile qualification from the type addressed by a pointer.</td>
-*     <td>The removal of the volatile qualification inside the function has no side effects.</td>
-*   </tr>
-* </table>
-*
 * \section group_smif_changelog Changelog
 * <table class="doxtable">
 *   <tr><th>Version</th><th>Changes</th><th>Reason for Change</th></tr>
+*   <tr>
+*     <td rowspan="4">2.0</td>
+*     <td>Reworked the \ref Cy_SMIF_MemRead and \ref Cy_SMIF_MemWrite functions to use polling instead of interrupts.</td>
+*     <td>Extend the usability of these functions.</td>
+*   </tr>
+*   <tr>
+*    <td>Reworked the length-parameter check in the \ref Cy_SMIF_MemEraseSector function.
+*     The Erase operation is not performed and \ref CY_SMIF_SUCCESS is no longer returned when the sectors are not aligned.</td>
+*     <td>Fix the user error-handling of the length parameter.</td>
+*   </tr>
+*   <tr>
+*    <td>Fixed the address-parameter check in the \ref Cy_SMIF_MemLocateHybridRegion function.
+*     \ref CY_SMIF_SUCCESS or \ref CY_SMIF_NOT_HYBRID_MEM is no longer returned when the address exceeds the memory size.</td>
+*     <td>Address a defect.</td>
+*   </tr>
+*   <tr>
+*     <td>Fixed MISRA 2012 violations.</td>
+*     <td>MISRA 2012 compliance.</td>
+*   </tr>
+*   <tr>
+*     <td>1.50.1</td>
+*     <td>Minor documentation updates. </td>
+*     <td>Documentation improvement. </td>
+*   </tr>
+*   <tr>
+*     <td>1.50</td>
+*     <td>Added a new function: \ref Cy_SMIF_MemLocateHybridRegion.\n
+*     Added a new structure \ref cy_stc_smif_hybrid_region_info_t.\n
+*     Updated the \ref Cy_SMIF_MemEraseSector and \ref Cy_SMIF_MemCmdSectorErase functions.\n
+*     Updated the \ref Cy_SMIF_MemSfdpDetect function. \n
+*     Updated the \ref cy_stc_smif_mem_device_cfg_t structure.</td>
+*     <td>Support for memories with hybrid regions.</td>
+*   </tr>
 *   <tr>
 *     <td rowspan="2">1.40.1</td>
 *     <td>The \ref Cy_SMIF_MemInit is changed. </td>
@@ -447,10 +457,10 @@ extern "C" {
 */
 
 /** The driver major version */
-#define CY_SMIF_DRV_VERSION_MAJOR       1
+#define CY_SMIF_DRV_VERSION_MAJOR       2
 
 /** The driver minor version */
-#define CY_SMIF_DRV_VERSION_MINOR       40
+#define CY_SMIF_DRV_VERSION_MINOR       0
 
 /** One microsecond timeout for Cy_SMIF_TimeoutRun() */
 #define CY_SMIF_WAIT_1_UNIT             (1U)
@@ -679,6 +689,8 @@ typedef enum
     CY_SMIF_NO_QE_BIT       = CY_SMIF_ID |CY_PDL_STATUS_ERROR | 0x03U,
     CY_SMIF_BAD_PARAM       = CY_SMIF_ID |CY_PDL_STATUS_ERROR | 0x04U,   /**< The SMIF API received the wrong parameter */
     CY_SMIF_NO_SFDP_SUPPORT = CY_SMIF_ID |CY_PDL_STATUS_ERROR | 0x05U,   /**< The external memory does not support SFDP (JESD216B). */
+    CY_SMIF_NOT_HYBRID_MEM  = CY_SMIF_ID |CY_PDL_STATUS_ERROR | 0x06U,   /**< The external memory is not hybrid */
+    CY_SMIF_SFDP_CORRUPTED_TABLE = CY_SMIF_ID |CY_PDL_STATUS_ERROR | 0x07U, /**< The SFDP table is corrupted */
     /** Failed to initialize the slave select 0 external memory by auto detection (SFDP). */
     CY_SMIF_SFDP_SS0_FAILED = CY_SMIF_ID |CY_PDL_STATUS_ERROR |
                             ((uint32_t)CY_SMIF_SFDP_FAIL << CY_SMIF_SFDP_FAIL_SS0_POS),

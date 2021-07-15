@@ -1,5 +1,6 @@
 /* mbed Microcontroller Library
  * Copyright (c) 2018 ARM Limited
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +22,9 @@
 #include "gpio_api.h"
 #include "platform/mbed_thread.h"
 #include "PinNames.h"
-#include "UARTSerial.h"
+#include "drivers/BufferedSerial.h"
 
-#define WAIT_AFTER_POWR_CHANGED	(1000)	// [msec.]
+#define WAIT_AFTER_POWR_CHANGED (1000)  // [msec.]
 
 using namespace mbed;
 
@@ -111,7 +112,7 @@ void ONBOARD_QUECTEL_BG96::onboard_modem_power_down()
 
 CellularDevice *CellularDevice::get_target_default_instance()
 {
-    static UARTSerial serial(MDMTXD, MDMRXD, 115200);
+    static BufferedSerial serial(MDMTXD, MDMRXD, 115200);
     static ONBOARD_QUECTEL_BG96 device(&serial);
     return &device;
 }

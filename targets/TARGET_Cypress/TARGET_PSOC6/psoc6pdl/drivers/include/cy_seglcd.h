@@ -1,13 +1,13 @@
 /***************************************************************************//**
 * \file cy_seglcd.h
-* \version 1.0.1
+* \version 1.10
 *
 * \brief
 * Provides an API declaration of the Segment LCD driver.
 *
 ********************************************************************************
 * \copyright
-* Copyright 2019 Cypress Semiconductor Corporation
+* Copyright 2019-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -116,7 +116,7 @@
 * causes the dividers to reconfigure.
 * Under possible restrictions related to certain ratios between contrast and frame rates 
 * (see Contrast vs. Frame Rate section above), switching between High Speed and the Low Speed modes
-* via the \ref Cy_SegLCD_Init function may set new dividers values that don’t give the same contrast value.
+* via the \ref Cy_SegLCD_Init function may set new dividers values that don't give the same contrast value.
 *
 * Driving Modes (\ref cy_stc_seglcd_config_t.drive)\n
 * SegLCD supports the following operating modes:
@@ -154,15 +154,15 @@
 *
 * Digital Correlation (\ref CY_SEGLCD_CORRELATION)\n
 * The principles of operation are illustrated by the example waveforms shown in the following figures.
-* Digital Correlation Example – Type-A:
+* Digital Correlation Example - Type-A:
 * \image html seglcd_DCA.png
-* Digital Correlation Example – Type-B:
+* Digital Correlation Example - Type-B:
 * \image html seglcd_DCB.png
 * As illustrated, instead of generating bias voltages between the rails, this approach takes advantage of the LCD displays characteristic:
 * the LCD segments' on-ness and off-ness degree is determined by the RMS voltage across the segments. In this approach, the correlation
 * coefficient between any given pair of COM and SEG signals determines whether the corresponding LCD segment is On or Off.
 * Thus, by doubling the base drive frequency of the COM signals in their inactive sub-frame intervals, the phase relationship of the COM and SEG
-* drive signals can be varied to turn segments on and off – rather than varying the DC levels of the signals as is used in the conventional approaches.
+* drive signals can be varied to turn segments on and off - rather than varying the DC levels of the signals as is used in the conventional approaches.
 *
 * PWM Drive (\ref CY_SEGLCD_PWM)\n
 * This approach duplicates the multi-voltage drive signals of the conventional method with bias B using a PWM output signal together
@@ -249,40 +249,14 @@
 * \section group_seglcd_more_information More Information
 * Refer to the technical reference manual (TRM) and the device datasheet.
 *
-* \section group_seglcd_MISRA MISRA-C Compliance
-* <table class="doxtable">
-*   <tr>
-*     <th>MISRA Rule</th>
-*     <th>Rule Class (Required/Advisory)</th>
-*     <th>Rule Description</th>
-*     <th>Description of Deviation(s)</th>
-*   </tr>
-*   <tr>
-*     <td>10.3</td>
-*     <td>R</td>
-*     <td>The value of a complex expression of integer type shall only be cast to a type of the
-*         same signedness that is no wider than the underlying type of the expression.</td>
-*     <td>The value got from the bitfield physically cannot exceed the enumeration
-*         that describes this bitfield. So, the code is safe by design.</td>
-*   </tr>
-*   <tr>
-*     <td>11.4</td>
-*     <td>A</td>
-*     <td>A cast should not be performed between a pointer to object type and
-*         a different pointer to object type.</td>
-*     <td>This is a fix for the GCC compiler warning.</td>
-*   </tr>
-*   <tr>
-*     <td>14.1</td>
-*     <td>R</td>
-*     <td>There shall be no unreachable code.</td>
-*     <td>This is the HOBTO parameter reading for future features support.</td>
-*   </tr>
-* </table>
-*
 * \section group_seglcd_changelog Changelog
 * <table class="doxtable">
 *   <tr><th>Version</th><th>Changes</th><th>Reason for Change</th></tr>
+*   <tr>
+*     <td>1.10</td>
+*     <td>Fixed/Documented MISRA 2012 violations.</td>
+*     <td>MISRA 2012 compliance.</td>
+*   </tr>
 *   <tr>
 *     <td>1.0.1</td>
 *     <td>Code snippets are extended to support the CY8C62x5 device family</td>
@@ -326,7 +300,7 @@ extern "C" {
 #define CY_SEGLCD_DRV_VERSION_MAJOR         1
 
 /** Driver minor version */
-#define CY_SEGLCD_DRV_VERSION_MINOR         0
+#define CY_SEGLCD_DRV_VERSION_MINOR         10
 
 /** SegLCD driver ID */
 #define CY_SEGLCD_ID                        (CY_PDL_DRV_ID(0x40u))

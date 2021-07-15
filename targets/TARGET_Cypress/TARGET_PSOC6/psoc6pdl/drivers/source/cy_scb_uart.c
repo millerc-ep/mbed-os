@@ -1,12 +1,12 @@
 /***************************************************************************//**
 * \file cy_scb_uart.c
-* \version 2.40
+* \version 2.60
 *
 * Provides UART API implementation of the SCB driver.
 *
 ********************************************************************************
 * \copyright
-* Copyright 2016-2019 Cypress Semiconductor Corporation
+* Copyright 2016-2020 Cypress Semiconductor Corporation
 * SPDX-License-Identifier: Apache-2.0
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,7 +54,7 @@ static uint32_t SelectRxFifoLevel(CySCB_Type const *base);
 * by the user. The structure is used during the UART operation for internal
 * configuration and data retention. The user must not modify anything
 * in this structure.
-* If only UART \ref group_scb_uart_ll will be used pass NULL as pointer to 
+* If only UART \ref group_scb_uart_ll will be used pass NULL as pointer to
 * context.
 *
 * \return
@@ -81,8 +81,8 @@ cy_en_scb_uart_status_t Cy_SCB_UART_Init(CySCB_Type *base, cy_stc_scb_uart_confi
     CY_ASSERT_L2(CY_SCB_UART_IS_DATA_WIDTH_VALID  (config->dataWidth));
     CY_ASSERT_L2(CY_SCB_UART_IS_ADDRESS_VALID     (config->receiverAddress));
     CY_ASSERT_L2(CY_SCB_UART_IS_ADDRESS_MASK_VALID(config->receiverAddressMask));
-    CY_ASSERT_L2(CY_SCB_UART_IS_MUTLI_PROC_VALID  (config->enableMutliProcessorMode, config->uartMode, config->dataWidth,
-                                                   config->parity));
+
+    CY_ASSERT_L2(CY_SCB_UART_IS_MUTLI_PROC_VALID  (config->enableMutliProcessorMode, config->uartMode, config->dataWidth, config->parity));
 
     CY_ASSERT_L2(CY_SCB_IS_INTR_VALID(config->rxFifoIntEnableMask, CY_SCB_UART_RX_INTR_MASK));
     CY_ASSERT_L2(CY_SCB_IS_INTR_VALID(config->txFifoIntEnableMask, CY_SCB_UART_TX_INTR_MASK));
@@ -232,7 +232,7 @@ void Cy_SCB_UART_DeInit(CySCB_Type *base)
 * Disables the SCB block and clears context statuses.
 * Note that after the block is disabled, the TX and RX FIFOs and
 * hardware statuses are cleared. Also, the hardware stops driving the
-* output and ignores the input. Refer to section \ref group_scb_uart_lp for more 
+* output and ignores the input. Refer to section \ref group_scb_uart_lp for more
 * information about UART pins when SCB disabled.
 
 * \param base
@@ -274,12 +274,12 @@ void Cy_SCB_UART_Disable(CySCB_Type *base, cy_stc_scb_uart_context_t *context)
 ****************************************************************************//**
 *
 * This function handles the transition of the SCB UART into and out of
-* Deep Sleep mode. It prevents the device from entering Deep Sleep 
+* Deep Sleep mode. It prevents the device from entering Deep Sleep
 * mode if the UART is transmitting data or has any data in the RX FIFO. If the
 * UART is ready to enter Deep Sleep mode, it is disabled. The UART is enabled
 * when the device fails to enter Deep Sleep mode or it is awakened from
 * Deep Sleep mode. While the UART is disabled, it stops driving the outputs
-* and ignores the inputs. Any incoming data is ignored. Refer to section 
+* and ignores the inputs. Any incoming data is ignored. Refer to section
 * \ref group_scb_uart_lp for more information about UART pins when SCB disabled.
 *
 * This function must be called during execution of \ref Cy_SysPm_CpuEnterDeepSleep,
@@ -367,6 +367,7 @@ cy_en_syspm_status_t Cy_SCB_UART_DeepSleepCallback(cy_stc_syspm_callback_params_
         break;
 
         default:
+            /* Unknown state */
             break;
     }
 
@@ -378,13 +379,13 @@ cy_en_syspm_status_t Cy_SCB_UART_DeepSleepCallback(cy_stc_syspm_callback_params_
 * Function Name: Cy_SCB_UART_HibernateCallback
 ****************************************************************************//**
 *
-* This function handles the transition of the SCB UART into Hibernate mode. 
+* This function handles the transition of the SCB UART into Hibernate mode.
 * It prevents the device from entering Hibernate mode if the UART is
 * transmitting data or has any data in the RX FIFO. If the UART is ready
 * to enter Hibernate mode, it is disabled. If the device fails to enter
 * Hibernate mode, the UART is enabled. While the UART is disabled, it stops
 * driving the outputs and ignores the inputs. Any incoming data is ignored.
-* Refer to section \ref group_scb_uart_lp for more information about UART pins 
+* Refer to section \ref group_scb_uart_lp for more information about UART pins
 * when SCB disabled.
 *
 * This function must be called during execution of \ref Cy_SysPm_SystemEnterHibernate.
@@ -423,7 +424,7 @@ cy_en_syspm_status_t Cy_SCB_UART_HibernateCallback(cy_stc_syspm_callback_params_
 *
 * Starts the receive ring buffer operation.
 * The RX interrupt source is configured to get data from the RX
-* FIFO and put into the ring buffer. 
+* FIFO and put into the ring buffer.
 *
 * \param base
 * The pointer to the UART SCB instance.
@@ -558,7 +559,7 @@ uint32_t Cy_SCB_UART_GetNumInRingBuffer(CySCB_Type const *base, cy_stc_scb_uart_
     }
     else
     {
-        size = (locHead + (context->rxBufSize - context->rxRingBufTail));
+        size = (locHead + (context->rxRingBufSize - context->rxRingBufTail));
     }
 
     return (size);
@@ -1099,7 +1100,7 @@ void Cy_SCB_UART_SendBreakBlocking(CySCB_Type *base, uint32_t breakWidth)
 * This is the interrupt function for the SCB configured in the UART mode.
 * This function must be called inside a user-defined interrupt service
 * routine to make \ref Cy_SCB_UART_Transmit and \ref Cy_SCB_UART_Receive
-* work. The ring buffer operation that enabled by calling \ref Cy_SCB_UART_StartRingBuffer 
+* work. The ring buffer operation that enabled by calling \ref Cy_SCB_UART_StartRingBuffer
 * also requires interrupt processing.
 *
 * \param base
@@ -1216,7 +1217,7 @@ void Cy_SCB_UART_Interrupt(CySCB_Type *base, cy_stc_scb_uart_context_t *context)
                 context->cbEvents(CY_SCB_UART_TRANSMIT_EMTPY);
             }
 
-			Cy_SCB_ClearTxInterrupt(base, CY_SCB_UART_TX_EMPTY);
+            Cy_SCB_ClearTxInterrupt(base, CY_SCB_UART_TX_EMPTY);
         }
 
     }
@@ -1458,4 +1459,3 @@ static void HandleDataTransmit(CySCB_Type *base, cy_stc_scb_uart_context_t *cont
 #endif /* CY_IP_MXSCB */
 
 /* [] END OF FILE */
-

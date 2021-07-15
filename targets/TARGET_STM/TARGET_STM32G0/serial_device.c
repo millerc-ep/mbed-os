@@ -17,8 +17,12 @@
 
 #include "serial_api_hal.h"
 
-#define UART_NUM (5)
 
+#if defined (STM32G031xx)
+#define UART_NUM (3)
+#else
+#define UART_NUM (5)
+#endif
 
 uint32_t serial_irq_ids[UART_NUM] = {0};
 UART_HandleTypeDef uart_handlers[UART_NUM];
@@ -125,21 +129,33 @@ void serial_irq_set(serial_t *obj, SerialIrq irq, uint32_t enable)
 
 #if defined(USART3_BASE)
     if (obj_s->uart == UART_3) {
+#if defined(LPUART1_BASE)
         irq_n = USART3_4_LPUART1_IRQn;
+#else
+        irq_n = USART3_4_IRQn;
+#endif
         vector = (uint32_t)&uart3_irq;
     }
 #endif
 
 #if defined(USART4_BASE)
     if (obj_s->uart == UART_4) {
+#if defined(LPUART1_BASE)
         irq_n = USART3_4_LPUART1_IRQn;
+#else
+        irq_n = USART3_4_IRQn;
+#endif
         vector = (uint32_t)&uart4_irq;
     }
 #endif
 
 #if defined(LPUART1_BASE)
     if (obj_s->uart == LPUART_1) {
+#if defined(USART3_BASE)
         irq_n = USART3_4_LPUART1_IRQn;
+#else
+        irq_n = LPUART1_IRQn;
+#endif
         vector = (uint32_t)&lpuart1_irq;
     }
 #endif
@@ -158,19 +174,13 @@ void serial_irq_set(serial_t *obj, SerialIrq irq, uint32_t enable)
         if (irq == RxIrq) {
             __HAL_UART_DISABLE_IT(huart, UART_IT_RXNE);
             // Check if TxIrq is disabled too
-#if defined(STM32G0)
-#define USART_CR1_TXEIE   USART_CR1_TXEIE_TXFNFIE
-#endif
-            if ((huart->Instance->CR1 & USART_CR1_TXEIE) == 0) {
+            if ((huart->Instance->CR1 & USART_CR1_TXEIE_TXFNFIE) == 0) {
                 all_disabled = 1;
             }
         } else { // TxIrq
             __HAL_UART_DISABLE_IT(huart, UART_IT_TXE);
             // Check if RxIrq is disabled too
-#if defined(STM32G0)
-#define USART_CR1_RXNEIE   USART_CR1_RXNEIE_RXFNEIE
-#endif
-            if ((huart->Instance->CR1 & USART_CR1_RXNEIE) == 0) {
+            if ((huart->Instance->CR1 & USART_CR1_RXNEIE_RXFNEIE) == 0) {
                 all_disabled = 1;
             }
         }
@@ -190,8 +200,15 @@ int serial_getc(serial_t *obj)
     struct serial_s *obj_s = SERIAL_S(obj);
     UART_HandleTypeDef *huart = &uart_handlers[obj_s->index];
 
+    /* Computation of UART mask to apply to RDR register */
+    UART_MASK_COMPUTATION(huart);
+    uint16_t uhMask = huart->Mask;
+
     while (!serial_readable(obj));
-    return (int)(huart->Instance->RDR & (uint16_t)0xFF);
+    /* When receiving with the parity enabled, the value read in the MSB bit
+     * is the received parity bit.
+     */
+    return (int)(huart->Instance->RDR & uhMask);
 }
 
 void serial_putc(serial_t *obj, int c)
@@ -200,7 +217,12 @@ void serial_putc(serial_t *obj, int c)
     UART_HandleTypeDef *huart = &uart_handlers[obj_s->index];
 
     while (!serial_writable(obj));
-    huart->Instance->TDR = (uint32_t)(c & (uint16_t)0xFF);
+    /* When transmitting with the parity enabled (PCE bit set to 1 in the
+     * USART_CR1 register), the value written in the MSB (bit 7 or bit 8
+     * depending on the data length) has no effect because it is replaced
+     * by the parity.
+     */
+    huart->Instance->TDR = (uint16_t)(c & 0x1FFU);
 }
 
 void serial_clear(serial_t *obj)
@@ -312,18 +334,30 @@ static IRQn_Type serial_get_irq_n(UARTName uart_name)
 #endif
 #if defined(USART3_BASE)
         case UART_3:
+#if defined(LPUART1_BASE)
             irq_n = USART3_4_LPUART1_IRQn;
+#else
+            irq_n = USART3_4_IRQn;
+#endif
             break;
 #endif
 #if defined(USART4_BASE)
         case UART_4:
+#if defined(LPUART1_BASE)
             irq_n = USART3_4_LPUART1_IRQn;
+#else
+            irq_n = USART3_4_IRQn;
+#endif
             break;
 #endif
 
 #if defined(LPUART1_BASE)
         case LPUART_1:
+#if defined(USART3_BASE)
             irq_n = USART3_4_LPUART1_IRQn;
+#else
+            irq_n = LPUART1_IRQn;
+#endif
             break;
 #endif
         default:
@@ -635,7 +669,7 @@ static void _serial_set_flow_control_direct(serial_t *obj, FlowControl type, con
     }
     if (type == FlowControlRTS) {
         // Enable RTS
-        MBED_ASSERT(pinmap->rx_flow_pin != (UARTName)NC);
+        MBED_ASSERT(pinmap->rx_flow_pin != NC);
         obj_s->hw_flow_ctl = UART_HWCONTROL_RTS;
         obj_s->pin_rts = pinmap->rx_flow_pin;
         // Enable the pin for RTS function
@@ -644,7 +678,7 @@ static void _serial_set_flow_control_direct(serial_t *obj, FlowControl type, con
     }
     if (type == FlowControlCTS) {
         // Enable CTS
-        MBED_ASSERT(pinmap->tx_flow_pin != (UARTName)NC);
+        MBED_ASSERT(pinmap->tx_flow_pin != NC);
         obj_s->hw_flow_ctl = UART_HWCONTROL_CTS;
         obj_s->pin_cts = pinmap->tx_flow_pin;
         // Enable the pin for CTS function
@@ -653,8 +687,8 @@ static void _serial_set_flow_control_direct(serial_t *obj, FlowControl type, con
     }
     if (type == FlowControlRTSCTS) {
         // Enable CTS & RTS
-        MBED_ASSERT(pinmap->rx_flow_pin != (UARTName)NC);
-        MBED_ASSERT(pinmap->tx_flow_pin != (UARTName)NC);
+        MBED_ASSERT(pinmap->rx_flow_pin != NC);
+        MBED_ASSERT(pinmap->tx_flow_pin != NC);
         obj_s->hw_flow_ctl = UART_HWCONTROL_RTS_CTS;
         obj_s->pin_rts = pinmap->rx_flow_pin;;
         obj_s->pin_cts = pinmap->tx_flow_pin;;
